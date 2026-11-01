@@ -1955,8 +1955,10 @@ section[id] {
   }
   .announce p {
     font-size: 0.72rem;
+    flex-direction: column;
+    gap: 0.25rem;
   }
-  .announce p span:nth-child(n + 2) {
+  .announce__dot {
     display: none;
   }
   .hero__kicker {
