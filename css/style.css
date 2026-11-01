@@ -207,17 +207,7 @@ section[id] {
   padding: 0.5rem 1rem;
 }
 .announce p {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  align-items: center;
-  gap: 0.35rem 0.8rem;
-}
-.announce__dot {
-  width: 4px;
-  height: 4px;
-  border-radius: 50%;
-  background: var(--caramel);
+  margin: 0;
 }
 .btn--light {
   background: var(--cream);
@@ -1951,14 +1941,6 @@ section[id] {
 /* Mobile */
 @media (max-width: 560px) {
   .brand__tag {
-    display: none;
-  }
-  .announce p {
-    font-size: 0.72rem;
-    flex-direction: column;
-    gap: 0.25rem;
-  }
-  .announce__dot {
     display: none;
   }
   .hero__kicker {
