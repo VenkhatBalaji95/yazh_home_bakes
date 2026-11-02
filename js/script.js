@@ -179,13 +179,10 @@
   /* ======================================================================
      3. CENTRAL ORDER STATE
      ====================================================================== */
-  const STORAGE_KEY = "yazh_order_v1";
+  const STORAGE_KEY = "yazh_order_v2";
   const defaultState = () => ({
-    productId: null,
-    weight: "250g",
-    eggless: false,
-    frostings: [],
-    chips: [],
+    // each item: { productId, weight, eggless, frostings: [ids], chips: [ids] }
+    cart: [],
     customer: { name: "" },
     // transient weight / egg choices per card before adding to order
     cardWeights: {},
@@ -193,6 +190,8 @@
   });
 
   let state = loadState();
+  // Brownie being customised; moved into state.cart once its chips step is done.
+  let draft = null;
   let currentStep = 0; // 0 = not in flow; 1..3 = frosting, chips, summary
 
   function loadState() {
@@ -204,6 +203,9 @@
           defaultState(),
           saved && typeof saved === "object" ? saved : {}
         );
+        loaded.cart = Array.isArray(loaded.cart)
+          ? loaded.cart.map(cleanItem).filter(Boolean)
+          : [];
         loaded.customer = {
           name:
             loaded.customer && typeof loaded.customer.name === "string"
@@ -232,30 +234,39 @@
   function getProduct(id) {
     return PRODUCTS.find((p) => p.id === id) || null;
   }
-  function basePrice() {
-    const p = getProduct(state.productId);
-    return p ? p.prices[state.weight] : 0;
-  }
-  function egglessExtra() {
-    return state.eggless ? CONFIG.egglessSurcharge[state.weight] || 0 : 0;
-  }
   function cardPrice(p, weight, eggless) {
     return p.prices[weight] + (eggless ? CONFIG.egglessSurcharge[weight] || 0 : 0);
   }
-  function frostingUnit() {
-    return CONFIG.frostingPrices[state.weight] || 0;
+  function frostingUnit(weight) {
+    return CONFIG.frostingPrices[weight] || 0;
   }
-  function chipUnit() {
-    return CONFIG.chipPrices[state.weight] || 0;
+  function chipUnit(weight) {
+    return CONFIG.chipPrices[weight] || 0;
   }
-  function frostingSubtotal() {
-    return state.frostings.length * frostingUnit();
+  function itemTotals(item) {
+    const p = getProduct(item.productId);
+    const base = p ? p.prices[item.weight] : 0;
+    const eggless = item.eggless ? CONFIG.egglessSurcharge[item.weight] || 0 : 0;
+    const frostings = item.frostings.length * frostingUnit(item.weight);
+    const chips = item.chips.length * chipUnit(item.weight);
+    return { base, eggless, frostings, chips, total: base + eggless + frostings + chips };
   }
-  function chipsSubtotal() {
-    return state.chips.length * chipUnit();
+  function orderTotal() {
+    return state.cart.reduce((sum, item) => sum + itemTotals(item).total, 0);
   }
-  function subtotal() {
-    return basePrice() + egglessExtra() + frostingSubtotal() + chipsSubtotal();
+  // Drops anything stored locally that no longer matches the menu.
+  function cleanItem(item) {
+    if (!item || !getProduct(item.productId)) return null;
+    if (!WEIGHTS.some((w) => w.key === item.weight)) return null;
+    const ids = (list, picked) =>
+      (Array.isArray(picked) ? picked : []).filter((id) => list.some((x) => x.id === id));
+    return {
+      productId: item.productId,
+      weight: item.weight,
+      eggless: !!item.eggless,
+      frostings: ids(FROSTINGS, item.frostings),
+      chips: ids(CHIPS, item.chips),
+    };
   }
 
   // SVG fallback so the site looks intentional before real photos are added.
@@ -295,6 +306,13 @@
     "Could you please help me with some details?\n\n" +
     "Thank you!";
 
+  const CUSTOM_ENQUIRY_MESSAGE =
+    "Hello Yazh Home Bakes!\n\n" +
+    "I'd love to enquire about a custom brownie order.\n\n" +
+    "Here's what I'm imagining:\n" +
+    "[Share your idea, occasion, design, or any details you have]\n\n" +
+    "Could you let me know what's possible and the price? Thank you!";
+
   function notifyMessage(category) {
     return (
       "Hello Yazh Home Bakes!\n\n" +
@@ -305,56 +323,26 @@
   }
 
   function buildOrderMessage() {
-    const p = getProduct(state.productId);
-    const c = state.customer;
-    const L = [];
-    L.push("Hello Yazh Home Bakes!");
+    const names = (ids, list) =>
+      ids.map((id) => list.find((x) => x.id === id).name).join(", ") || "None";
+    const L = [
+      "Hello Yazh Home Bakes!",
+      "I'm *" + state.customer.name.trim() + "* and I'd like to place an order:",
+      "",
+    ];
+    state.cart.forEach((item, i) => {
+      L.push(
+        "*" + (i + 1) + ". " + getProduct(item.productId).name + "* (" +
+          item.weight + ", " + (item.eggless ? "Eggless" : "With egg") + ")"
+      );
+      L.push("Frosting: " + names(item.frostings, FROSTINGS));
+      L.push("Choco chips: " + names(item.chips, CHIPS));
+      L.push("Price: " + inr(itemTotals(item).total));
+      L.push("");
+    });
+    L.push("*Total: " + inr(orderTotal()) + "* + delivery charges");
     L.push("");
-    L.push("I would like to place an order.");
-    L.push("");
-    L.push("*BROWNIE DETAILS*");
-    L.push("Product: " + (p ? p.name : "-"));
-    L.push("Weight: " + state.weight);
-    L.push("Type: " + (state.eggless ? "Eggless" : "Egg-based"));
-    L.push("Base Price: " + inr(basePrice()));
-    if (state.eggless) L.push("Eggless Extra: " + inr(egglessExtra()));
-    L.push("");
-    L.push("*FROSTING SELECTION*");
-    if (state.frostings.length) {
-      state.frostings.forEach((id) => {
-        const f = FROSTINGS.find((x) => x.id === id);
-        if (f) L.push("- " + f.name + " (" + f.type + "): " + inr(frostingUnit()));
-      });
-    } else {
-      L.push("- None");
-    }
-    L.push("");
-    L.push("*CHOCO CHIPS SELECTION*");
-    if (state.chips.length) {
-      state.chips.forEach((id) => {
-        const ch = CHIPS.find((x) => x.id === id);
-        if (ch) L.push("- " + ch.name + " (" + ch.type + "): " + inr(chipUnit()));
-      });
-    } else {
-      L.push("- None");
-    }
-    L.push("");
-    L.push("*ORDER SUMMARY*");
-    L.push("Brownie: " + inr(basePrice()));
-    if (state.eggless) L.push("Eggless Extra: " + inr(egglessExtra()));
-    L.push("Frostings: " + inr(frostingSubtotal()));
-    L.push("Choco Chips: " + inr(chipsSubtotal()));
-    L.push("Subtotal: " + inr(subtotal()));
-    L.push("");
-    L.push("*CUSTOMER DETAILS*");
-    L.push("Customer Name: " + c.name);
-    L.push("");
-    L.push("");
-    L.push("Order Total: " + inr(subtotal()) + " + applicable delivery charges.");
-    L.push("");
-    L.push("Please confirm my order.");
-    L.push("");
-    L.push("Thank you!");
+    L.push("Please confirm my order. Thank you!");
     return L.join("\n");
   }
 
@@ -551,9 +539,9 @@
 
   function renderFrostings() {
     const wrap = $("#frostingGrid");
-    if (!wrap) return;
+    if (!wrap || !draft) return;
     wrap.innerHTML = FROSTINGS.map((f) => {
-      const active = state.frostings.includes(f.id);
+      const active = draft.frostings.includes(f.id);
       const fb = placeholder(f.name, "#3a2114", "#A07852", f.swirl);
       return `
       <button type="button" class="option${active ? " is-selected" : ""}" data-frosting="${f.id}"
@@ -568,7 +556,7 @@
             <span class="option__name">${f.name}</span>
             <span class="option__type">${f.type}</span>
           </span>
-          <span class="option__price">${inr(frostingUnit())}</span>
+          <span class="option__price">${inr(frostingUnit(draft.weight))}</span>
         </span>
       </button>`;
     }).join("");
@@ -577,9 +565,9 @@
 
   function renderChips() {
     const wrap = $("#chipsGrid");
-    if (!wrap) return;
+    if (!wrap || !draft) return;
     wrap.innerHTML = CHIPS.map((c) => {
-      const active = state.chips.includes(c.id);
+      const active = draft.chips.includes(c.id);
       const fb = placeholder(c.name, "#4a2e1c", "#A07852", c.dot);
       return `
       <button type="button" class="option${active ? " is-selected" : ""}" data-chip="${c.id}"
@@ -594,7 +582,7 @@
             <span class="option__name">${c.name}</span>
             <span class="option__type">${c.type}</span>
           </span>
-          <span class="option__price">${inr(chipUnit())}</span>
+          <span class="option__price">${inr(chipUnit(draft.weight))}</span>
         </span>
       </button>`;
     }).join("");
@@ -602,74 +590,88 @@
   }
 
   function updateFrostingMeta() {
+    if (!draft) return;
+    const unit = frostingUnit(draft.weight);
     const count = $("#frostingCount");
     const sub = $("#frostingSubtotal");
-    if (count) count.textContent = state.frostings.length;
-    if (sub) sub.textContent = inr(frostingSubtotal());
+    if (count) count.textContent = draft.frostings.length;
+    if (sub) sub.textContent = inr(draft.frostings.length * unit);
     const rate = $("#frostingRate");
-    if (rate) rate.textContent = inr(frostingUnit()) + " (" + state.weight + " brownie)";
+    if (rate) rate.textContent = inr(unit) + " (" + draft.weight + " brownie)";
   }
   function updateChipsMeta() {
+    if (!draft) return;
+    const unit = chipUnit(draft.weight);
     const count = $("#chipsCount");
     const sub = $("#chipsSubtotal");
-    if (count) count.textContent = state.chips.length;
-    if (sub) sub.textContent = inr(chipsSubtotal());
+    if (count) count.textContent = draft.chips.length;
+    if (sub) sub.textContent = inr(draft.chips.length * unit);
     const rate = $("#chipsRate");
-    if (rate) rate.textContent = inr(chipUnit()) + " (" + state.weight + " brownie)";
+    if (rate) rate.textContent = inr(unit) + " (" + draft.weight + " brownie)";
+  }
+
+  function updateDraftLabel() {
+    if (!draft) return;
+    const label =
+      getProduct(draft.productId).name + " · " + draft.weight + " · " +
+      (draft.eggless ? "Eggless" : "With egg");
+    $$("[data-draft-label]").forEach((el) => {
+      el.textContent = label;
+    });
   }
 
   function renderSummary() {
-    const p = getProduct(state.productId);
     const box = $("#summaryBody");
-    if (!box || !p) return;
+    if (!box) return;
+    const empty = state.cart.length === 0;
+    $("#custForm").hidden = empty;
+    $("#placeOrder").disabled = empty;
 
-    const frostingRows = state.frostings.length
-      ? state.frostings
-          .map((id) => {
-            const f = FROSTINGS.find((x) => x.id === id);
-            return `<li><span>${f.name}<small>${f.type}</small></span><span>${inr(frostingUnit())}</span></li>`;
-          })
-          .join("")
-      : `<li class="muted"><span>No frosting added</span><span>₹0</span></li>`;
+    if (empty) {
+      box.innerHTML = `<p class="summary__empty">Your order is empty. Add a brownie to get started.</p>`;
+      return;
+    }
 
-    const chipRows = state.chips.length
-      ? state.chips
-          .map((id) => {
-            const c = CHIPS.find((x) => x.id === id);
-            return `<li><span>${c.name}<small>${c.type}</small></span><span>${inr(chipUnit())}</span></li>`;
-          })
-          .join("")
-      : `<li class="muted"><span>No choco chips added</span><span>₹0</span></li>`;
+    const items = state.cart
+      .map((item, i) => {
+        const p = getProduct(item.productId);
+        const t = itemTotals(item);
+        const addons = (ids, list, unit) =>
+          ids
+            .map((id) => {
+              const x = list.find((y) => y.id === id);
+              return `<li><span>${x.name}<small>${x.type}</small></span><span>${inr(unit)}</span></li>`;
+            })
+            .join("");
+        return `
+        <div class="cart-item">
+          <div class="cart-item__head">
+            <div>
+              <h4>${i + 1}. ${p.name}</h4>
+              <span class="muted">${item.weight} · ${item.eggless ? "Eggless" : "With egg"}</span>
+            </div>
+            <strong>${inr(t.total)}</strong>
+          </div>
+          <ul class="sum-list">
+            <li><span>Brownie</span><span>${inr(t.base)}</span></li>
+            ${item.eggless ? `<li><span>Eggless preparation</span><span>${inr(t.eggless)}</span></li>` : ""}
+            ${addons(item.frostings, FROSTINGS, frostingUnit(item.weight))}
+            ${addons(item.chips, CHIPS, chipUnit(item.weight))}
+          </ul>
+          <div class="cart-item__actions">
+            <button type="button" data-edit="${i}">Edit</button>
+            <button type="button" data-remove="${i}">Remove</button>
+          </div>
+        </div>`;
+      })
+      .join("");
 
     box.innerHTML = `
-      <div class="sum-row sum-row--lead">
-        <div>
-          <h4>${p.name}</h4>
-          <span class="muted">Weight: ${state.weight} · ${state.eggless ? "Eggless" : "Egg-based"}</span>
-        </div>
-        <strong>${inr(basePrice())}</strong>
-      </div>
-      ${
-        state.eggless
-          ? `<div class="sum-row sum-row--extra"><span>Eggless preparation (${state.weight})</span><span>${inr(egglessExtra())}</span></div>`
-          : ""
-      }
-
-      <div class="sum-block">
-        <h5>Frostings</h5>
-        <ul class="sum-list">${frostingRows}</ul>
-        <div class="sum-sub"><span>Frosting subtotal</span><span>${inr(frostingSubtotal())}</span></div>
-      </div>
-
-      <div class="sum-block">
-        <h5>Choco Chips</h5>
-        <ul class="sum-list">${chipRows}</ul>
-        <div class="sum-sub"><span>Choco chips subtotal</span><span>${inr(chipsSubtotal())}</span></div>
-      </div>
+      ${items}
 
       <div class="sum-row sum-row--total">
-        <span>Brownie &amp; add-ons subtotal</span>
-        <strong>${inr(subtotal())}</strong>
+        <span>Order subtotal</span>
+        <strong>${inr(orderTotal())}</strong>
       </div>
 
       <div class="sum-delivery">
@@ -682,11 +684,21 @@
 
       <div class="sum-row sum-row--final">
         <span>Final amount</span>
-        <strong>${inr(subtotal())} + applicable delivery charges</strong>
+        <strong>${inr(orderTotal())} + applicable delivery charges</strong>
       </div>`;
 
     // restore customer inputs
     $("#custName").value = state.customer.name || "";
+  }
+
+  function updateCartBar() {
+    const bar = $("#cartBar");
+    if (!bar) return;
+    const n = state.cart.length;
+    const flowOpen = $("#orderFlow").classList.contains("is-open");
+    bar.hidden = n === 0 || flowOpen;
+    $("#cartCount").textContent = n + (n === 1 ? " brownie" : " brownies");
+    $("#cartTotal").textContent = inr(orderTotal());
   }
 
   /* ======================================================================
@@ -701,6 +713,7 @@
     flow.classList.add("is-open");
     flow.setAttribute("aria-hidden", "false");
     document.body.style.overflow = "hidden";
+    updateCartBar();
     $("#closeFlow").focus();
   }
   function closeFlow() {
@@ -709,6 +722,8 @@
     flow.setAttribute("aria-hidden", "true");
     document.body.style.overflow = "";
     currentStep = 0;
+    draft = null;
+    updateCartBar();
     if (flowOpener && flowOpener.isConnected) flowOpener.focus();
     flowOpener = null;
   }
@@ -722,6 +737,7 @@
     if (step === 1) renderFrostings();
     if (step === 2) renderChips();
     if (step === 3) renderSummary();
+    if (step < 3) updateDraftLabel();
     const foot = $("#summaryFoot");
     if (foot) foot.classList.toggle("is-visible", step === 3);
     updateProgress();
@@ -740,18 +756,74 @@
       if (n === activeStage) el.setAttribute("aria-current", "step");
       else el.removeAttribute("aria-current");
     });
+    // Stage buttons only work while a brownie is being customised.
+    $$("[data-progress-step]").forEach((b) => {
+      b.disabled = !draft;
+    });
   }
 
   function startOrder(productId) {
     const p = getProduct(productId);
     if (!p) return;
-    state.productId = productId;
-    state.weight = state.cardWeights[productId] || "250g";
-    state.eggless = !!state.cardEggless[productId];
-    saveState();
+    draft = {
+      productId,
+      weight: state.cardWeights[productId] || "250g",
+      eggless: !!state.cardEggless[productId],
+      frostings: [],
+      chips: [],
+      editIndex: null,
+    };
     openFlow();
     goToStep(1);
-    toast(p.name + " (" + state.weight + (state.eggless ? ", eggless" : "") + ") added — now customise!");
+    toast(p.name + " selected — now customise!");
+  }
+
+  function editItem(index) {
+    const item = state.cart[index];
+    if (!item) return;
+    draft = {
+      productId: item.productId,
+      weight: item.weight,
+      eggless: item.eggless,
+      frostings: item.frostings.slice(),
+      chips: item.chips.slice(),
+      editIndex: index,
+    };
+    goToStep(1);
+  }
+
+  function removeItem(index) {
+    state.cart.splice(index, 1);
+    saveState();
+    renderSummary();
+    updateCartBar();
+    toast("Brownie removed");
+  }
+
+  // Saves the draft brownie into the order and shows the summary.
+  function finishDraft() {
+    if (!draft) return;
+    const item = {
+      productId: draft.productId,
+      weight: draft.weight,
+      eggless: draft.eggless,
+      frostings: draft.frostings,
+      chips: draft.chips,
+    };
+    if (draft.editIndex !== null && state.cart[draft.editIndex]) state.cart[draft.editIndex] = item;
+    else state.cart.push(item);
+    draft = null;
+    saveState();
+    goToStep(3);
+    toast("Added to your order");
+  }
+
+  // Leaves customising without saving; returns to the summary when editing.
+  function cancelDraft() {
+    const wasEditing = draft && draft.editIndex !== null;
+    draft = null;
+    if (wasEditing) goToStep(3);
+    else closeFlow();
   }
 
   /* ======================================================================
@@ -789,10 +861,9 @@
      ====================================================================== */
   function resetOrder() {
     state = defaultState();
+    draft = null;
     saveState();
     renderProducts();
-    renderFrostings();
-    renderChips();
     closeFlow();
     toast("Order cleared");
   }
@@ -831,53 +902,63 @@
     // ---- Frosting selection ----
     $("#frostingGrid").addEventListener("click", (e) => {
       const btn = e.target.closest("[data-frosting]");
-      if (!btn) return;
+      if (!btn || !draft) return;
       const id = btn.dataset.frosting;
-      const i = state.frostings.indexOf(id);
-      if (i >= 0) state.frostings.splice(i, 1);
-      else state.frostings.push(id);
-      const on = state.frostings.includes(id);
+      const i = draft.frostings.indexOf(id);
+      if (i >= 0) draft.frostings.splice(i, 1);
+      else draft.frostings.push(id);
+      const on = draft.frostings.includes(id);
       btn.classList.toggle("is-selected", on);
       btn.setAttribute("aria-pressed", String(on));
-      saveState();
       updateFrostingMeta();
     });
 
     // ---- Chips selection ----
     $("#chipsGrid").addEventListener("click", (e) => {
       const btn = e.target.closest("[data-chip]");
-      if (!btn) return;
+      if (!btn || !draft) return;
       const id = btn.dataset.chip;
-      const i = state.chips.indexOf(id);
-      if (i >= 0) state.chips.splice(i, 1);
-      else state.chips.push(id);
-      const on = state.chips.includes(id);
+      const i = draft.chips.indexOf(id);
+      if (i >= 0) draft.chips.splice(i, 1);
+      else draft.chips.push(id);
+      const on = draft.chips.includes(id);
       btn.classList.toggle("is-selected", on);
       btn.setAttribute("aria-pressed", String(on));
-      saveState();
       updateChipsMeta();
     });
 
     // ---- Flow navigation buttons ----
-    $("#frostingBack").addEventListener("click", closeFlow);
+    $("#frostingBack").addEventListener("click", cancelDraft);
     $("#frostingSkip").addEventListener("click", () => {
-      state.frostings = [];
-      saveState();
-      renderFrostings();
+      if (!draft) return;
+      draft.frostings = [];
       goToStep(2);
     });
     $("#frostingNext").addEventListener("click", () => goToStep(2));
 
     $("#chipsBack").addEventListener("click", () => goToStep(1));
     $("#chipsSkip").addEventListener("click", () => {
-      state.chips = [];
-      saveState();
-      renderChips();
+      if (!draft) return;
+      draft.chips = [];
+      finishDraft();
+    });
+    $("#chipsNext").addEventListener("click", finishDraft);
+
+    // Summary: add more brownies, edit or remove existing ones
+    $("#summaryAdd").addEventListener("click", () => {
+      closeFlow();
+      goToMenu("brownies");
+    });
+    $("#summaryBody").addEventListener("click", (e) => {
+      const edit = e.target.closest("[data-edit]");
+      if (edit) return editItem(Number(edit.dataset.edit));
+      const remove = e.target.closest("[data-remove]");
+      if (remove) removeItem(Number(remove.dataset.remove));
+    });
+    $("#cartOpen").addEventListener("click", () => {
+      openFlow();
       goToStep(3);
     });
-    $("#chipsNext").addEventListener("click", () => goToStep(3));
-
-    $("#summaryBack").addEventListener("click", () => goToStep(2));
     $("#closeFlow").addEventListener("click", closeFlow);
     $("#flowOverlay").addEventListener("click", closeFlow);
 
@@ -885,10 +966,10 @@
     $$("[data-progress-step]").forEach((el) => {
       el.addEventListener("click", () => {
         const stage = Number(el.dataset.progressStep);
-        if (!state.productId) return;
+        if (!draft) return;
         if (stage === 2) goToStep(1);
         else if (stage === 3) goToStep(2);
-        else if (stage === 4) goToStep(3);
+        else if (stage === 4) finishDraft();
       });
     });
 
@@ -905,8 +986,8 @@
 
     // ---- Place order via WhatsApp ----
     $("#placeOrder").addEventListener("click", () => {
-      if (!state.productId) {
-        toast("Please select a brownie first");
+      if (!state.cart.length) {
+        toast("Please add a brownie first");
         return;
       }
       if (!validateCustomer()) {
@@ -927,6 +1008,9 @@
     $$("[data-enquiry]").forEach((a) => {
       a.href = waUrl(ENQUIRY_MESSAGE);
     });
+    $$("[data-custom-enquiry]").forEach((a) => {
+      a.href = waUrl(CUSTOM_ENQUIRY_MESSAGE);
+    });
 
     // ---- Start-order CTA buttons scroll to catalogue ----
     $$('[data-scroll="catalogue"]').forEach((b) =>
@@ -942,6 +1026,17 @@
       const go = e.target.closest("[data-tab-go]");
       if (go) goToMenu(go.dataset.tabGo);
     });
+    
+      // ---- Customer Stories dialog handlers ----
+      const storiesOpen = $("#storiesOpen");
+      const storiesClose = $("#storiesClose");
+      const storiesDialog = $("#storiesDialog");
+      storiesOpen.addEventListener("click", () => storiesDialog.showModal());
+      storiesClose.addEventListener("click", () => storiesDialog.close());
+      storiesDialog.addEventListener("click", (e) => {
+        if (e.target === storiesDialog) storiesDialog.close();
+      });
+      storiesDialog.addEventListener("close", () => storiesOpen.focus());
 
     // ---- Mobile nav ----
     const burger = $("#burger");
@@ -974,7 +1069,25 @@
     document.addEventListener("keydown", (e) => {
       const flow = $("#orderFlow");
       if (e.key === "Escape") {
-        closeFlow();
+        const storiesDialog = $("#storiesDialog");
+        if (storiesDialog.open) storiesDialog.close();
+        else closeFlow();
+        return;
+      }
+      const storiesDialog = $("#storiesDialog");
+      if (e.key === "Tab" && storiesDialog.open) {
+        const focusable = $$('button:not([disabled]), a[href], input:not([disabled]), [tabindex]:not([tabindex="-1"])', storiesDialog)
+          .filter((el) => el.getClientRects().length > 0);
+        if (!focusable.length) return;
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
         return;
       }
       if (e.key !== "Tab" || !flow.classList.contains("is-open")) return;
@@ -1023,8 +1136,7 @@
     renderTabs();
     renderSoonGrid();
     renderProducts();
-    renderFrostings();
-    renderChips();
+    updateCartBar();
     bindEvents();
   }
 

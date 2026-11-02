@@ -8,20 +8,23 @@
     <title>Yazh Home Bakes · Premium Homemade Brownies &amp; Desserts · Medavakkam, Chennai</title>
     <meta
       name="description"
-      content="Yazh Home Bakes — premium homemade brownies in Medavakkam, Chennai, with egg and eggless options. Customise with frosting & choco chips and order on WhatsApp. Blondies, cookies and ice creams coming soon."
+      content="Yazh Home Bakes in Medavakkam, Chennai: fresh egg and eggless brownies, custom celebration creations and WhatsApp ordering. Ask us about birthday brownies, brownie towers and more."
     />
     <meta name="theme-color" content="#382319" />
-    <link rel="canonical" href="https://your-username.github.io/yazh-home-bakes/" />
+    <link rel="canonical" href="https://venkhatbalaji95.github.io/yazh_home_bakes/" />
 
     <!-- Open Graph -->
     <meta property="og:type" content="website" />
     <meta property="og:title" content="Yazh Home Bakes · Premium Homemade Brownies &amp; Desserts" />
     <meta
       property="og:description"
-      content="Choose your brownie, customise frosting & choco chips, and order on WhatsApp. Happiness in Every Bite."
+      content="Choose egg or eggless brownies, add your favourite toppings, or message us about a birthday creation, brownie tower or custom order."
     />
-    <meta property="og:image" content="assets/logo/og-image.jpg" />
-    <meta property="og:url" content="https://your-username.github.io/yazh-home-bakes/" />
+    <meta property="og:image" content="https://venkhatbalaji95.github.io/yazh_home_bakes/assets/logo/og-image.jpg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Choco Overload brownies from Yazh Home Bakes" />
+    <meta property="og:url" content="https://venkhatbalaji95.github.io/yazh_home_bakes/" />
     <meta name="twitter:card" content="summary_large_image" />
 
     <!-- Favicon placeholder (replace assets/logo/favicon.png) -->
@@ -38,7 +41,7 @@
       rel="stylesheet"
     />
 
-    <link rel="stylesheet" href="css/style.css?v=14" />
+    <link rel="stylesheet" href="css/style.css?v=21" />
   </head>
   <body>
     <div class="announce">
@@ -134,7 +137,7 @@
         <li><span class="trust__icon" aria-hidden="true">✦</span>Freshly baked to order</li>
         <li><span class="trust__icon" aria-hidden="true">✦</span>Premium chocolate</li>
         <li><span class="trust__icon" aria-hidden="true">✦</span>Egg &amp; eggless options</li>
-        <li><span class="trust__icon" aria-hidden="true">✦</span>Customise with toppings</li>
+        <li><span class="trust__icon" aria-hidden="true">✦</span>Custom brownie orders</li>
         <li><span class="trust__icon" aria-hidden="true">✦</span>Easy WhatsApp ordering</li>
       </ul>
     </section>
@@ -156,11 +159,25 @@
         <div class="menu-panel" id="panel-brownies" role="tabpanel" aria-labelledby="tab-brownies">
           <div id="brownies" class="menu-panel__intro">
             <p>
-              Pick a brownie, weight and egg preference, then customise with
-              frosting and choco chips.
+              Choose a brownie, size and egg preference, then add frosting and
+              choco chips or share an idea for a custom order.
             </p>
             <p class="egg-note" id="eggNote"></p>
           </div>
+          <aside class="custom-box-note" aria-labelledby="customBoxTitle">
+            <div class="custom-box-note__copy">
+              <p class="custom-box-note__eyebrow">Made for your special moments</p>
+              <h3 id="customBoxTitle">A brownie made for your moment</h3>
+              <p>
+                Planning a birthday, dreaming of a brownie tower, or picturing
+                something else? Tell us what you have in mind. We&rsquo;ll help shape
+                the details and confirm the price with you on WhatsApp.
+              </p>
+            </div>
+            <a class="btn btn--outline custom-box-note__action" data-custom-enquiry href="#" target="_blank" rel="noopener">
+              Share your idea
+            </a>
+          </aside>
           <div id="productGrid"><!-- JS injected --></div>
         </div>
 
@@ -247,7 +264,7 @@
               <svg viewBox="0 0 24 24"><path d="M4 20c4-1 6-3 7-7l6-6 3 3-6 6c-4 1-6 3-7 7Z"/><path d="m14 7 3 3"/></svg>
             </span>
             <h3>Made your way</h3>
-            <p>Add frostings and choco chips to create your perfect treat.</p>
+            <p>Personalise with frostings and choco chips, or share an idea for a special occasion.</p>
           </article>
         </div>
       </div>
@@ -282,8 +299,8 @@
           </p>
         </header>
         <ol class="steps">
-          <li><span>1</span><p>Choose your favourite brownie.</p></li>
-          <li><span>2</span><p>Customise with your favourite frosting.</p></li>
+          <li><span>1</span><p>Choose one or more brownies.</p></li>
+          <li><span>2</span><p>Pick frostings for each brownie.</p></li>
           <li><span>3</span><p>Add your preferred choco chips.</p></li>
           <li><span>4</span><p>Review your order and delivery information.</p></li>
           <li><span>5</span><p>Send your order through WhatsApp.</p></li>
@@ -298,10 +315,8 @@
           <p class="eyebrow">Delivery</p>
           <h2 class="section__title">Freshly made, delivered with love</h2>
           <p>
-            Enjoy free delivery within 7 km of Medavakkam, Chennai. For
-            locations beyond 7 km, an additional ₹10 per kilometre will be
-            charged, rounded up to the next whole kilometre. Final delivery
-            charges will be confirmed by Yazh Home Bakes.
+            Freshly baked in our Medavakkam kitchen and packed with care for
+            delivery to your door.
           </p>
           <p class="delivery-note" data-delivery-msg></p>
         </div>
@@ -421,6 +436,7 @@
         <div class="order-flow__scroll" id="flowScroll">
           <!-- STEP: FROSTING -->
           <section class="step is-active" id="step-frosting">
+            <p class="step__for" data-draft-label></p>
             <h2 class="step__title">Make It Extra Special – Choose Your Frosting</h2>
             <p class="step__sub">
               Select any number of frostings. Each frosting is <strong id="frostingRate">₹100</strong>. Tap again to
@@ -442,6 +458,7 @@
 
           <!-- STEP: CHIPS -->
           <section class="step" id="step-chips">
+            <p class="step__for" data-draft-label></p>
             <h2 class="step__title">Add Some Extra Chocolate!</h2>
             <p class="step__sub">
               Pick your choco chips. Each option is <strong id="chipsRate">₹10</strong>. Tap again to remove.
@@ -455,7 +472,7 @@
               <div class="step__actions">
                 <button class="btn btn--ghost" id="chipsBack">Back</button>
                 <button class="btn btn--outline" id="chipsSkip">Skip</button>
-                <button class="btn btn--primary" id="chipsNext">Continue</button>
+                <button class="btn btn--primary" id="chipsNext">Add to Order</button>
               </div>
             </div>
           </section>
@@ -478,7 +495,7 @@
 
         <!-- Sticky footer actions -->
         <div class="order-flow__foot" id="summaryFoot">
-          <button class="btn btn--ghost" id="summaryBack">Back</button>
+          <button class="btn btn--ghost" id="summaryAdd">+ Add Another Brownie</button>
           <button class="btn btn--whats btn--lg" id="placeOrder">
             <svg viewBox="0 0 32 32" width="20" height="20" aria-hidden="true">
               <path fill="currentColor" d="M16 3C9 3 3.5 8.5 3.5 15.5c0 2.4.7 4.6 1.8 6.5L3 29l7.2-2.2c1.8 1 3.8 1.5 5.8 1.5 7 0 12.5-5.5 12.5-12.5S23 3 16 3zm0 22.6c-1.8 0-3.5-.5-5-1.4l-.4-.2-4.3 1.3 1.3-4.2-.2-.4c-1-1.6-1.5-3.4-1.5-5.2 0-5.6 4.6-10.1 10.3-10.1 5.6 0 10.1 4.5 10.1 10.1S21.6 25.6 16 25.6z"/>
@@ -488,6 +505,61 @@
         </div>
       </div>
     </div>
+
+    <!-- ================= CART BAR ================= -->
+    <div class="cart-bar" id="cartBar" hidden>
+      <button type="button" class="cart-bar__btn" id="cartOpen">
+        <span class="cart-bar__info">
+          <strong id="cartCount">0 brownies</strong>
+          <span id="cartTotal">₹0</span>
+        </span>
+        <span class="cart-bar__cta">View Order</span>
+      </button>
+    </div>
+
+    <!-- ================= CUSTOMER STORIES ================= -->
+    <button class="stories-trigger" id="storiesOpen" type="button" title="Customer Stories" aria-haspopup="dialog" aria-controls="storiesDialog">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11.5a7.5 7.5 0 0 1-7.5 7.5 8 8 0 0 1-3.5-.8L4 20l1.2-4.1a7.5 7.5 0 1 1 14.8-4.4Z"/><path d="M9 10h.01M12.5 10h.01M16 10h.01"/></svg>
+      <span>Customer Stories</span>
+    </button>
+    <dialog class="stories-dialog" id="storiesDialog" aria-labelledby="storiesTitle">
+      <header class="stories-dialog__head">
+        <div>
+          <p class="eyebrow">Customer Stories</p>
+          <h2 id="storiesTitle">Made for moments worth celebrating</h2>
+          <p>A few kind words from customers who made their brownie orders personal.</p>
+        </div>
+        <button class="stories-dialog__close" id="storiesClose" type="button" aria-label="Close customer stories">&times;</button>
+      </header>
+      <div class="stories-dialog__body">
+        <div class="feedback-grid">
+          <article class="feedback-card">
+            <div class="feedback-card__media">
+              <img src="assets/images/customer-orders/birthday-brownie.webp" alt="Customized brownie order for a birthday celebration" loading="lazy" onerror="this.closest('.feedback-card__media').hidden = true" />
+            </div>
+            <div class="feedback-card__body">
+              <blockquote><p>&ldquo;Ordered brownies for a birthday celebration and everyone loved them! They were so rich and fudgy, and the presentation was really nice. Definitely ordering again!&rdquo;</p></blockquote>
+            </div>
+          </article>
+          <article class="feedback-card">
+            <div class="feedback-card__media">
+              <img src="assets/images/customer-orders/brownie-box.jpg" alt="Freshly made brownie box order" loading="lazy" onerror="this.closest('.feedback-card__media').hidden = true" />
+            </div>
+            <div class="feedback-card__body">
+              <blockquote><p>&ldquo;The brownies were absolutely delicious! Loved the chocolatey taste and soft texture. They were freshly made and really satisfying. Thank you!&rdquo;</p></blockquote>
+            </div>
+          </article>
+          <article class="feedback-card">
+            <div class="feedback-card__media">
+              <img src="assets/images/customer-orders/custom-brownie.webp" alt="Custom decorated brownie order" loading="lazy" onerror="this.closest('.feedback-card__media').hidden = true" />
+            </div>
+            <div class="feedback-card__body">
+              <blockquote><p>&ldquo;The brownies looked beautiful and tasted even better! Loved the chocolate combination and the personal touch. Perfect for a special occasion. Highly recommend!&rdquo;</p></blockquote>
+            </div>
+          </article>
+        </div>
+      </div>
+    </dialog>
 
     <!-- ================= FLOATING WHATSAPP ================= -->
     <a class="fab" data-enquiry href="#" aria-label="Enquire on WhatsApp" target="_blank" rel="noopener">
@@ -499,7 +571,7 @@
     <!-- Toast -->
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-    <script src="js/script.js?v=6"></script>
+    <script src="js/script.js?v=12"></script>
     <script>
       // Hero/about imagery with graceful fallback (replace in assets/images/).
       (function () {

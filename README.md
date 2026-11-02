@@ -146,7 +146,7 @@ Or just open `index.html` directly in a browser.
 2. On GitHub: **Settings → Pages → Build and deployment**.
 3. Source: **Deploy from a branch**. Branch: **main**, folder: **/ (root)**.
 4. Save. Your site publishes at
-   `https://<your-username>.github.io/yazh-home-bakes/`.
+   `https://venkhatbalaji95.github.io/yazh_home_bakes/`.
 5. Update the `og:url` / `canonical` URLs in `index.html` to match.
 
 ---
